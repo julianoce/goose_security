@@ -1,4 +1,5 @@
 # Envio_GOOSE
+Direitos Autorais: Rafael Scarselli
 Envio de mensagens GOOSE criptografadas
 
 Existem três programas básicos que fazem parte desse conjunto de códigos. O primeiro deles é o envia_goose. É um programa que recebe 2 parâmetros de entrada, sendo o primeiro deles a quantidade de pacotes a ser enviada e o segundo é o modo de segurança que varia de 0 a 4.
