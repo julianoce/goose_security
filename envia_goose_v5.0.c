@@ -70,14 +70,13 @@ int main(int argc, char *argv[]){
 
     //inicio do codigo de envio*********************
     int sockfd;
-    // int ratio = 2;
-    // int min_time = 1;
-    // int max_time = 1000;
-    // int sq_num = 0;
-    // int an = min_time * pow(ratio, (sq_num-1));
-    // int st_num_ini = 0;
-    // int st_num = 1;
-    // int sq_num = 0;
+    int ratio = 2;
+    int min_time = 1;
+    int max_time = 2000;
+    int sq_num = 2;
+    int an = min_time * pow(ratio, (sq_num-1));
+    int st_num_ini = 0;
+    int st_num = 10;
     struct ifreq if_idx;
     struct ifreq if_mac;
     struct sockaddr_ll socket_address;
@@ -157,74 +156,8 @@ int main(int argc, char *argv[]){
     //fim do codigo para preparacao do CMAC
     //montagem e envio do pacote
     gettimeofday(&total1, NULL);
-    // int aux_sqnum = 0;
-    // if(st_num_ini == st_num){
-    //     while (an < (max_time/ratio))
-    //     {
-    //         sq_num = sq_num + 1;
-    //         an = int(min_time * (pow(ratio, sq_num-1)));
-    //         printf("%d\n", an);
-    //         sleep(an/1000);
-    //         aux_sqnum = aux_sqnum + 1;
-    //         if(sendto(sockfd, buffer, t_buffer, 0,
-    //         (struct sockaddr*)&socket_address,
-    //             sizeof(struct sockaddr_ll)) < 0)
-    //                 printf("Falha no envio\n");
-    //     }
-    //     if(an >= max_time/ratio){
-    //         an = max_time;
-    //         printf("%d\n", an);
-    //          sleep(an/1000);
-    //          aux_sqnum = aux_sqnum + 1;
-    //          if(sendto(sockfd, buffer, t_buffer, 0,
-    //         (struct sockaddr*)&socket_address,
-    //             sizeof(struct sockaddr_ll)) < 0)
-    //                 printf("Falha no envio\n");
-    //     }
-    // }
 
-    // if(st_num_ini < st_num){
-    //     printf("%d\n", st_num_ini);
-    //     while(an < max_time/ratio){
-    //         sq_num = sq_num + 1;
-    //         an = int(min_time * (pow(ratio, sq_num-1)));
-    //         printf("%d\n", an);
-    //         sleep(an/1000);
-    //         aux_sqnum = aux_sqnum + 1;
-    //         if(sendto(sockfd, buffer, t_buffer, 0,
-    //         (struct sockaddr*)&socket_address,
-    //             sizeof(struct sockaddr_ll)) < 0)
-    //                 printf("Falha no envio\n");
-    //     }
-    //     if(an >= max_time/ratio){
-    //         sq_num = sq_num + 1;
-    //         an = max_time;
-    //         printf("%d\n", an);
-    //         sleep(an/1000);
-    //         aux_sqnum = aux_sqnum + 1;
-    //         if(sendto(sockfd, buffer, t_buffer, 0,
-    //         (struct sockaddr*)&socket_address,
-    //             sizeof(struct sockaddr_ll)) < 0)
-    //                 printf("Falha no envio\n");
-    //         sq_num = 0;
-    //         an = int(min_time * (pow(ratio, sq_num-1)));
-    //         print("comeca a retransmissao.....");
-    //         printf("%d\n", an);
-    //     }
-    //     st_num_ini = st_num_ini + 1;
-    //     aux_sqnum = 0;
-    // }
-    // else{
-    //     sleep(max_time/1000);
-    //     aux_sqnum = aux_sqnum + 1;
-    //     if(sendto(sockfd, buffer, t_buffer, 0,
-    //         (struct sockaddr*)&socket_address,
-    //             sizeof(struct sockaddr_ll)) < 0)
-    //                 printf("Falha no envio\n");
-    // }
-    for(int i=0; i<qtd_pacotes;i++){
-        if(i == 0) gettimeofday(&tempo1, NULL);
-        t_buffer = criaPacote(buffer);
+    t_buffer = criaPacote(buffer);
         if(tipo_seguranca==1) t_buffer = adicionaNoPacote(buffer, geraHash(buffer, t_buffer), t_buffer, SHA256_BLOCK_SIZE); //adiciona 32 bytes do digest SHA256 no pacote
         if(tipo_seguranca==2) t_buffer = adicionaNoPacote(buffer, geraCifraAES(geraHash(buffer, t_buffer), chave, SHA256_BLOCK_SIZE), t_buffer, SHA256_BLOCK_SIZE);
         if(tipo_seguranca==3) t_buffer = adicionaNoPacote(buffer, geraCifraRSA(geraHash(buffer, t_buffer), pubk, privk, SHA256_BLOCK_SIZE), t_buffer, 32);
@@ -240,27 +173,113 @@ int main(int argc, char *argv[]){
             for(int i=0; i<conteudo_extra; i++) preenchimento[i] = 0xCA;
             t_buffer = adicionaNoPacote(buffer, preenchimento, t_buffer, conteudo_extra);
         }
-        if(sendto(sockfd, buffer, t_buffer, 0,
-            (struct sockaddr*)&socket_address,
-                sizeof(struct sockaddr_ll)) < 0)
-                    printf("Falha no envio\n");
-        //enviaPacote(buffer, t_buffer);
-        if(i == 9) gettimeofday(&tempo2, NULL);
+    
+    while(1){
+        int aux_sqnum = 0;
+        if(st_num_ini == st_num){
+            while (an < (max_time/ratio))
+            {
+                sq_num = sq_num + 1;
+                an = min_time * (pow(ratio, sq_num-1));
+                printf("%d\n", an);
+                sleep(an/1000);
+                aux_sqnum = aux_sqnum + 1;
+                if(sendto(sockfd, buffer, t_buffer, 0,
+                (struct sockaddr*)&socket_address,
+                    sizeof(struct sockaddr_ll)) < 0)
+                        printf("Falha no envio\n");
+            }
+            if(an >= max_time/ratio){
+                an = max_time;
+                printf("%d\n", an);
+                sleep(an/1000);
+                aux_sqnum = aux_sqnum + 1;
+                if(sendto(sockfd, buffer, t_buffer, 0,
+                (struct sockaddr*)&socket_address,
+                    sizeof(struct sockaddr_ll)) < 0)
+                        printf("Falha no envio\n");
+            }
+        }
 
-    }
-    gettimeofday(&total2, NULL);
-    printf("Mensagem enviada com sucesso ! \n\n");
-    if(qtd_pacotes >= 10) printf("Tempo de PROCESSAMENTO MEDIO dos 10 primeiros pacotes  = %ld microssegundos\n",
-                (((tempo2.tv_sec - tempo1.tv_sec) * 1000000) + (tempo2.tv_usec - tempo1.tv_usec))/10);
-    printf("Tempo de PROCESSAMENTO MEDIO de TODOS os [%d] pacotes  = %ld microssegundos\n", qtd_pacotes,
-                (((total2.tv_sec-total1.tv_sec) * 1000000) + (total2.tv_usec-total1.tv_usec))/qtd_pacotes);
-    //printf("\n");
-    printf("Tamanho do pacote final: %d\n\n",t_buffer);
-    if(tipo_seguranca==3){
-        gcry_sexp_release(pubk);
-        gcry_sexp_release(privk);
+        if(st_num_ini < st_num){
+            printf("%d\n", st_num_ini);
+            while(an < max_time/ratio){
+                sq_num = sq_num + 1;
+                an = min_time * (pow(ratio, sq_num-1));
+                printf("%d\n", an);
+                sleep(an/1000);
+                aux_sqnum = aux_sqnum + 1;
+                if(sendto(sockfd, buffer, t_buffer, 0,
+                (struct sockaddr*)&socket_address,
+                    sizeof(struct sockaddr_ll)) < 0)
+                        printf("Falha no envio\n");
+            }
+            if(an >= max_time/ratio){
+                sq_num = sq_num + 1;
+                an = max_time;
+                printf("%d\n", an);
+                sleep(an/1000);
+                aux_sqnum = aux_sqnum + 1;
+                if(sendto(sockfd, buffer, t_buffer, 0,
+                (struct sockaddr*)&socket_address,
+                    sizeof(struct sockaddr_ll)) < 0)
+                        printf("Falha no envio\n");
+                sq_num = 0;
+                an = min_time * (pow(ratio, sq_num-1));
+                printf("%d\n", an);
+            }
+            st_num_ini = st_num_ini + 1;
+            aux_sqnum = 0;
+        }
+        else{
+            sleep(max_time/1000);
+            aux_sqnum = aux_sqnum + 1;
+            if(sendto(sockfd, buffer, t_buffer, 0,
+                (struct sockaddr*)&socket_address,
+                    sizeof(struct sockaddr_ll)) < 0)
+                        printf("Falha no envio\n");
+        }
+        // for(int i=0; i<qtd_pacotes;i++){
+        //     if(i == 0) gettimeofday(&tempo1, NULL);
+        //     t_buffer = criaPacote(buffer);
+        //     if(tipo_seguranca==1) t_buffer = adicionaNoPacote(buffer, geraHash(buffer, t_buffer), t_buffer, SHA256_BLOCK_SIZE); //adiciona 32 bytes do digest SHA256 no pacote
+        //     if(tipo_seguranca==2) t_buffer = adicionaNoPacote(buffer, geraCifraAES(geraHash(buffer, t_buffer), chave, SHA256_BLOCK_SIZE), t_buffer, SHA256_BLOCK_SIZE);
+        //     if(tipo_seguranca==3) t_buffer = adicionaNoPacote(buffer, geraCifraRSA(geraHash(buffer, t_buffer), pubk, privk, SHA256_BLOCK_SIZE), t_buffer, 32);
+        //     if(tipo_seguranca==4) t_buffer = adicionaNoPacote(buffer, geraHMAC(buffer, t_buffer, chave, 16), t_buffer, SHA256_BLOCK_SIZE);
+        //     if(tipo_seguranca==5){
+        //         unsigned char cmac[16];
+        //         AES_CMAC(L, buffer, t_buffer, cmac);
+        //         t_buffer = adicionaNoPacote(buffer, cmac, t_buffer, AES_BLOCKLEN);
+        //     }
+        //     if(conteudo_extra > 0){
+        //         if(conteudo_extra > 400) conteudo_extra = 400;
+        //         char preenchimento[conteudo_extra];
+        //         for(int i=0; i<conteudo_extra; i++) preenchimento[i] = 0xCA;
+        //         t_buffer = adicionaNoPacote(buffer, preenchimento, t_buffer, conteudo_extra);
+        //     }
+        //     if(sendto(sockfd, buffer, t_buffer, 0,
+        //         (struct sockaddr*)&socket_address,
+        //             sizeof(struct sockaddr_ll)) < 0)
+        //                 printf("Falha no envio\n");
+        //     //enviaPacote(buffer, t_buffer);
+        //     if(i == 9) gettimeofday(&tempo2, NULL);
 
+        // }
+        gettimeofday(&total2, NULL);
+        printf("Mensagem enviada com sucesso ! \n\n");
+        if(qtd_pacotes >= 10) printf("Tempo de PROCESSAMENTO MEDIO dos 10 primeiros pacotes  = %ld microssegundos\n",
+                    (((tempo2.tv_sec - tempo1.tv_sec) * 1000000) + (tempo2.tv_usec - tempo1.tv_usec))/10);
+        printf("Tempo de PROCESSAMENTO MEDIO de TODOS os [%d] pacotes  = %ld microssegundos\n", qtd_pacotes,
+                    (((total2.tv_sec-total1.tv_sec) * 1000000) + (total2.tv_usec-total1.tv_usec))/qtd_pacotes);
+        //printf("\n");
+        printf("Tamanho do pacote final: %d\n\n",t_buffer);
+        if(tipo_seguranca==3){
+            gcry_sexp_release(pubk);
+            gcry_sexp_release(privk);
+
+        }
     }
+    
     return 0;
 }
 
