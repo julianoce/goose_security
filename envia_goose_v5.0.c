@@ -1,5 +1,5 @@
 /* Para rodar manualmente no linux, use:
- * sudo gcc gcry.c envia_goose_v5.0.c aes.c sha256.c cmac.c -lgcrypt -lgpg-error -o envia_goose
+ * sudo gcc gcry.c envia_goose_v5.0.c aes.c sha256.c cmac.c -lgcrypt -lm -lgpg-error -o envia_goose
  * sudo ./envia_goose 1 0
  * parâmetro 1 significa quantidade de pacotes, deve ser inteiro positivo
  * parâmetro 2 significa modo de seguranca, varia de 0 a 4
@@ -30,7 +30,7 @@
 #define DESTINO_MAC5    0x01
 
 // #define DEFAULT_IF      "enxb827ebe9a3f0"
-#define DEFAULT_IF      "enp1s0"
+#define DEFAULT_IF      "wlp3s0"
 #define TAMANHO_BUF     512
 
 #define IPAD 0x36 //definido na RFC2104
@@ -39,6 +39,7 @@
 
 int criaPacoteCompleto(char *buffer, uint16_t AppID, char *gocbRef, char *datSet, char *goID, uint8_t stNum, uint8_t sqNum);
 int criaPacote(char *buffer);
+int constroiPacote(char *buffer, int sq_num, int st_num);
 void imprimeHex(char *msg, int tamanho);
 void imprimePacote(char *msg, int tamanho);
 void enviaPacote(char *mensagem, int tamanho);//retorna o sockfd
@@ -76,7 +77,7 @@ int main(int argc, char *argv[]){
     int sq_num = 2;
     int an = min_time * pow(ratio, (sq_num-1));
     int st_num_ini = 0;
-    int st_num = 10;
+    int st_num = 3;
     struct ifreq if_idx;
     struct ifreq if_mac;
     struct sockaddr_ll socket_address;
@@ -157,7 +158,7 @@ int main(int argc, char *argv[]){
     //montagem e envio do pacote
     gettimeofday(&total1, NULL);
 
-    t_buffer = criaPacote(buffer);
+    t_buffer = constroiPacote(buffer, sq_num, st_num_ini);
         if(tipo_seguranca==1) t_buffer = adicionaNoPacote(buffer, geraHash(buffer, t_buffer), t_buffer, SHA256_BLOCK_SIZE); //adiciona 32 bytes do digest SHA256 no pacote
         if(tipo_seguranca==2) t_buffer = adicionaNoPacote(buffer, geraCifraAES(geraHash(buffer, t_buffer), chave, SHA256_BLOCK_SIZE), t_buffer, SHA256_BLOCK_SIZE);
         if(tipo_seguranca==3) t_buffer = adicionaNoPacote(buffer, geraCifraRSA(geraHash(buffer, t_buffer), pubk, privk, SHA256_BLOCK_SIZE), t_buffer, 32);
@@ -184,6 +185,23 @@ int main(int argc, char *argv[]){
                 printf("%d\n", an);
                 sleep(an/1000);
                 aux_sqnum = aux_sqnum + 1;
+
+                t_buffer = constroiPacote(buffer, aux_sqnum, st_num_ini);
+                if(tipo_seguranca==1) t_buffer = adicionaNoPacote(buffer, geraHash(buffer, t_buffer), t_buffer, SHA256_BLOCK_SIZE); //adiciona 32 bytes do digest SHA256 no pacote
+                if(tipo_seguranca==2) t_buffer = adicionaNoPacote(buffer, geraCifraAES(geraHash(buffer, t_buffer), chave, SHA256_BLOCK_SIZE), t_buffer, SHA256_BLOCK_SIZE);
+                if(tipo_seguranca==3) t_buffer = adicionaNoPacote(buffer, geraCifraRSA(geraHash(buffer, t_buffer), pubk, privk, SHA256_BLOCK_SIZE), t_buffer, 32);
+                if(tipo_seguranca==4) t_buffer = adicionaNoPacote(buffer, geraHMAC(buffer, t_buffer, chave, 16), t_buffer, SHA256_BLOCK_SIZE);
+                if(tipo_seguranca==5){
+                    unsigned char cmac[16];
+                    AES_CMAC(L, buffer, t_buffer, cmac);
+                    t_buffer = adicionaNoPacote(buffer, cmac, t_buffer, AES_BLOCKLEN);
+                }
+                if(conteudo_extra > 0){
+                    if(conteudo_extra > 400) conteudo_extra = 400;
+                    char preenchimento[conteudo_extra];
+                    for(int i=0; i<conteudo_extra; i++) preenchimento[i] = 0xCA;
+                    t_buffer = adicionaNoPacote(buffer, preenchimento, t_buffer, conteudo_extra);
+                }
                 if(sendto(sockfd, buffer, t_buffer, 0,
                 (struct sockaddr*)&socket_address,
                     sizeof(struct sockaddr_ll)) < 0)
@@ -194,6 +212,23 @@ int main(int argc, char *argv[]){
                 printf("%d\n", an);
                 sleep(an/1000);
                 aux_sqnum = aux_sqnum + 1;
+                
+                t_buffer = constroiPacote(buffer, aux_sqnum, st_num_ini);
+                if(tipo_seguranca==1) t_buffer = adicionaNoPacote(buffer, geraHash(buffer, t_buffer), t_buffer, SHA256_BLOCK_SIZE); //adiciona 32 bytes do digest SHA256 no pacote
+                if(tipo_seguranca==2) t_buffer = adicionaNoPacote(buffer, geraCifraAES(geraHash(buffer, t_buffer), chave, SHA256_BLOCK_SIZE), t_buffer, SHA256_BLOCK_SIZE);
+                if(tipo_seguranca==3) t_buffer = adicionaNoPacote(buffer, geraCifraRSA(geraHash(buffer, t_buffer), pubk, privk, SHA256_BLOCK_SIZE), t_buffer, 32);
+                if(tipo_seguranca==4) t_buffer = adicionaNoPacote(buffer, geraHMAC(buffer, t_buffer, chave, 16), t_buffer, SHA256_BLOCK_SIZE);
+                if(tipo_seguranca==5){
+                    unsigned char cmac[16];
+                    AES_CMAC(L, buffer, t_buffer, cmac);
+                    t_buffer = adicionaNoPacote(buffer, cmac, t_buffer, AES_BLOCKLEN);
+                }
+                if(conteudo_extra > 0){
+                    if(conteudo_extra > 400) conteudo_extra = 400;
+                    char preenchimento[conteudo_extra];
+                    for(int i=0; i<conteudo_extra; i++) preenchimento[i] = 0xCA;
+                    t_buffer = adicionaNoPacote(buffer, preenchimento, t_buffer, conteudo_extra);
+                }
                 if(sendto(sockfd, buffer, t_buffer, 0,
                 (struct sockaddr*)&socket_address,
                     sizeof(struct sockaddr_ll)) < 0)
@@ -209,6 +244,22 @@ int main(int argc, char *argv[]){
                 printf("%d\n", an);
                 sleep(an/1000);
                 aux_sqnum = aux_sqnum + 1;
+                t_buffer = constroiPacote(buffer, aux_sqnum, st_num_ini);
+                if(tipo_seguranca==1) t_buffer = adicionaNoPacote(buffer, geraHash(buffer, t_buffer), t_buffer, SHA256_BLOCK_SIZE); //adiciona 32 bytes do digest SHA256 no pacote
+                if(tipo_seguranca==2) t_buffer = adicionaNoPacote(buffer, geraCifraAES(geraHash(buffer, t_buffer), chave, SHA256_BLOCK_SIZE), t_buffer, SHA256_BLOCK_SIZE);
+                if(tipo_seguranca==3) t_buffer = adicionaNoPacote(buffer, geraCifraRSA(geraHash(buffer, t_buffer), pubk, privk, SHA256_BLOCK_SIZE), t_buffer, 32);
+                if(tipo_seguranca==4) t_buffer = adicionaNoPacote(buffer, geraHMAC(buffer, t_buffer, chave, 16), t_buffer, SHA256_BLOCK_SIZE);
+                if(tipo_seguranca==5){
+                    unsigned char cmac[16];
+                    AES_CMAC(L, buffer, t_buffer, cmac);
+                    t_buffer = adicionaNoPacote(buffer, cmac, t_buffer, AES_BLOCKLEN);
+                }
+                if(conteudo_extra > 0){
+                    if(conteudo_extra > 400) conteudo_extra = 400;
+                    char preenchimento[conteudo_extra];
+                    for(int i=0; i<conteudo_extra; i++) preenchimento[i] = 0xCA;
+                    t_buffer = adicionaNoPacote(buffer, preenchimento, t_buffer, conteudo_extra);
+                }
                 if(sendto(sockfd, buffer, t_buffer, 0,
                 (struct sockaddr*)&socket_address,
                     sizeof(struct sockaddr_ll)) < 0)
@@ -220,6 +271,23 @@ int main(int argc, char *argv[]){
                 printf("%d\n", an);
                 sleep(an/1000);
                 aux_sqnum = aux_sqnum + 1;
+
+                t_buffer = constroiPacote(buffer, aux_sqnum, st_num_ini);
+                if(tipo_seguranca==1) t_buffer = adicionaNoPacote(buffer, geraHash(buffer, t_buffer), t_buffer, SHA256_BLOCK_SIZE); //adiciona 32 bytes do digest SHA256 no pacote
+                if(tipo_seguranca==2) t_buffer = adicionaNoPacote(buffer, geraCifraAES(geraHash(buffer, t_buffer), chave, SHA256_BLOCK_SIZE), t_buffer, SHA256_BLOCK_SIZE);
+                if(tipo_seguranca==3) t_buffer = adicionaNoPacote(buffer, geraCifraRSA(geraHash(buffer, t_buffer), pubk, privk, SHA256_BLOCK_SIZE), t_buffer, 32);
+                if(tipo_seguranca==4) t_buffer = adicionaNoPacote(buffer, geraHMAC(buffer, t_buffer, chave, 16), t_buffer, SHA256_BLOCK_SIZE);
+                if(tipo_seguranca==5){
+                    unsigned char cmac[16];
+                    AES_CMAC(L, buffer, t_buffer, cmac);
+                    t_buffer = adicionaNoPacote(buffer, cmac, t_buffer, AES_BLOCKLEN);
+                }
+                if(conteudo_extra > 0){
+                    if(conteudo_extra > 400) conteudo_extra = 400;
+                    char preenchimento[conteudo_extra];
+                    for(int i=0; i<conteudo_extra; i++) preenchimento[i] = 0xCA;
+                    t_buffer = adicionaNoPacote(buffer, preenchimento, t_buffer, conteudo_extra);
+                }
                 if(sendto(sockfd, buffer, t_buffer, 0,
                 (struct sockaddr*)&socket_address,
                     sizeof(struct sockaddr_ll)) < 0)
@@ -234,6 +302,22 @@ int main(int argc, char *argv[]){
         else{
             sleep(max_time/1000);
             aux_sqnum = aux_sqnum + 1;
+            t_buffer = constroiPacote(buffer, aux_sqnum, st_num_ini);
+                if(tipo_seguranca==1) t_buffer = adicionaNoPacote(buffer, geraHash(buffer, t_buffer), t_buffer, SHA256_BLOCK_SIZE); //adiciona 32 bytes do digest SHA256 no pacote
+                if(tipo_seguranca==2) t_buffer = adicionaNoPacote(buffer, geraCifraAES(geraHash(buffer, t_buffer), chave, SHA256_BLOCK_SIZE), t_buffer, SHA256_BLOCK_SIZE);
+                if(tipo_seguranca==3) t_buffer = adicionaNoPacote(buffer, geraCifraRSA(geraHash(buffer, t_buffer), pubk, privk, SHA256_BLOCK_SIZE), t_buffer, 32);
+                if(tipo_seguranca==4) t_buffer = adicionaNoPacote(buffer, geraHMAC(buffer, t_buffer, chave, 16), t_buffer, SHA256_BLOCK_SIZE);
+                if(tipo_seguranca==5){
+                    unsigned char cmac[16];
+                    AES_CMAC(L, buffer, t_buffer, cmac);
+                    t_buffer = adicionaNoPacote(buffer, cmac, t_buffer, AES_BLOCKLEN);
+                }
+                if(conteudo_extra > 0){
+                    if(conteudo_extra > 400) conteudo_extra = 400;
+                    char preenchimento[conteudo_extra];
+                    for(int i=0; i<conteudo_extra; i++) preenchimento[i] = 0xCA;
+                    t_buffer = adicionaNoPacote(buffer, preenchimento, t_buffer, conteudo_extra);
+                }
             if(sendto(sockfd, buffer, t_buffer, 0,
                 (struct sockaddr*)&socket_address,
                     sizeof(struct sockaddr_ll)) < 0)
@@ -328,7 +412,6 @@ int criaPacoteCompleto(char *buffer, uint16_t AppID, char *gocbRef, char *datSet
     buffer[tx_len++] = 0xff; //GOOSE APPID
     uint16_t goose_length = 00; //GOOSE LENGTH
     int local_goose_length = tx_len;
-    printf("%d", local_goose_length);
     buffer[tx_len++] = goose_length>>8;
     buffer[tx_len++] = goose_length;
     for(int i=0;i<4;i++) buffer[tx_len++] = 0x00;//reserved 1 e 2
@@ -376,13 +459,13 @@ int criaPacoteCompleto(char *buffer, uint16_t AppID, char *gocbRef, char *datSet
     // buffer[local_goosePDU_length] += 2 + sizeof(agora);                 //atualiza size APDU
 
     buffer[tx_len++] = 0x85;                                            //stNum TAG
-    buffer[tx_len++] = stNum;                                           //stNum Length
-    buffer[tx_len++] = sizeof(stNum);                                   //stNum Data
+    buffer[tx_len++] = 0x01;                                           //stNum Length
+    buffer[tx_len++] = stNum;                                     //stNum Data
     // buffer[local_goosePDU_length] += 2 + sizeof(stNum);                 //atualiza size APDU
 
     buffer[tx_len++] = 0x86;                                            //sqNum TAG
-    buffer[tx_len++] = sqNum;                                           //sqNum Length
-    buffer[tx_len++] = sizeof(sqNum);                                   //sqNum Data
+    buffer[tx_len++] = 0x01;                                           //sqNum Length
+    buffer[tx_len++] = sqNum;                                   //sqNum Data
     // buffer[local_goosePDU_length] += 2 + sizeof(sqNum);                 //atualiza size APDU
 
     buffer[tx_len++] = 0x87;                                           //test TAG
@@ -446,6 +529,18 @@ void imprimePacote(char *msg, int tamanho){
         printf("\nGoose Length: %d", msg[17]);
     }
     else printf("Outro");
+}
+
+int constroiPacote(char *buffer, int sq_num, int st_num){
+    uint16_t AppID = 65535;
+    unsigned char *gocbRef = "teste IED Rafael";
+    unsigned char *datSet = "Device900/GOOSE1";
+    unsigned char *goID = "900_GOOSE1";
+    uint16_t stNum = st_num;
+    uint16_t sqNum = sq_num;
+
+    return criaPacoteCompleto(buffer, (uint16_t)AppID, gocbRef, datSet, goID, (uint8_t)stNum, (uint8_t)sqNum);
+
 }
 
 void enviaPacote(char *mensagem, int tamanho){
