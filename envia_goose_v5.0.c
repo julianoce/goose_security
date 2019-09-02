@@ -73,7 +73,7 @@ int main(int argc, char *argv[]){
     int sockfd;
     int ratio = 2;
     int min_time = 1;
-    int max_time = 2000;
+    int max_time = 5000;
     int sq_num = 2;
     int an = min_time * pow(ratio, (sq_num-1));
     int st_num_ini = 0;
@@ -81,6 +81,7 @@ int main(int argc, char *argv[]){
     struct ifreq if_idx;
     struct ifreq if_mac;
     struct sockaddr_ll socket_address;
+    int pacotes_enviados = 0;
 
     /* Get interface name */
     char ifName[IFNAMSIZ];
@@ -206,6 +207,7 @@ int main(int argc, char *argv[]){
                 (struct sockaddr*)&socket_address,
                     sizeof(struct sockaddr_ll)) < 0)
                         printf("Falha no envio\n");
+                pacotes_enviados = pacotes_enviados + 1;
             }
             if(an >= max_time/ratio){
                 an = max_time;
@@ -233,6 +235,8 @@ int main(int argc, char *argv[]){
                 (struct sockaddr*)&socket_address,
                     sizeof(struct sockaddr_ll)) < 0)
                         printf("Falha no envio\n");
+                pacotes_enviados = pacotes_enviados + 1;
+                
             }
         }
 
@@ -264,6 +268,8 @@ int main(int argc, char *argv[]){
                 (struct sockaddr*)&socket_address,
                     sizeof(struct sockaddr_ll)) < 0)
                         printf("Falha no envio\n");
+                pacotes_enviados = pacotes_enviados + 1;
+                
             }
             if(an >= max_time/ratio){
                 sq_num = sq_num + 1;
@@ -292,8 +298,10 @@ int main(int argc, char *argv[]){
                 (struct sockaddr*)&socket_address,
                     sizeof(struct sockaddr_ll)) < 0)
                         printf("Falha no envio\n");
-                sq_num = 0;
+                pacotes_enviados = pacotes_enviados + 1;                
+                sq_num = 2;
                 an = min_time * (pow(ratio, sq_num-1));
+                printf("%s\n", "Comeca a retransmissao....");
                 printf("%d\n", an);
             }
             st_num_ini = st_num_ini + 1;
@@ -322,6 +330,7 @@ int main(int argc, char *argv[]){
                 (struct sockaddr*)&socket_address,
                     sizeof(struct sockaddr_ll)) < 0)
                         printf("Falha no envio\n");
+            pacotes_enviados = pacotes_enviados + 1;
         }
         // for(int i=0; i<qtd_pacotes;i++){
         //     if(i == 0) gettimeofday(&tempo1, NULL);
@@ -350,10 +359,7 @@ int main(int argc, char *argv[]){
 
         // }
         gettimeofday(&total2, NULL);
-        printf("Mensagem enviada com sucesso ! \n\n");
-        if(qtd_pacotes >= 10) printf("Tempo de PROCESSAMENTO MEDIO dos 10 primeiros pacotes  = %ld microssegundos\n",
-                    (((tempo2.tv_sec - tempo1.tv_sec) * 1000000) + (tempo2.tv_usec - tempo1.tv_usec))/10);
-        printf("Tempo de PROCESSAMENTO MEDIO de TODOS os [%d] pacotes  = %ld microssegundos\n", qtd_pacotes,
+        printf("Tempo de PROCESSAMENTO MEDIO de TODOS os [%d] pacotes = %ld microssegundos\n", pacotes_enviados,
                     (((total2.tv_sec-total1.tv_sec) * 1000000) + (total2.tv_usec-total1.tv_usec))/qtd_pacotes);
         //printf("\n");
         printf("Tamanho do pacote final: %d\n\n",t_buffer);
