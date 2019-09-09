@@ -22,6 +22,7 @@
 #include "sha256.h"
 #include "aes.h"
 #include "gcry.h"           //para cadastrar rsa
+#include <math.h>
 
 #define DESTINO_MAC0    0x01
 #define DESTINO_MAC1    0x0c
@@ -41,6 +42,7 @@ int criaPacote(char *buffer);
 void imprimeHex(char *msg, int tamanho);
 void imprimePacote(char *msg, int tamanho);
 void enviaPacote(char *mensagem, int tamanho);
+int constroiPacote(char *buffer, int sq_num, int st_num);
 int adicionaNoPacote(char *pacote, char *conteudo, int tamanho_pacote, int tamanho_conteudo);
 void *geraHash(char *resposta, char *pacote, int tamanho);
 void *geraCifraAES(char *resposta, char *texto, char *chave, int tamanho);  
@@ -64,6 +66,15 @@ int main(int argc, char *argv[]){
     struct ifreq if_idx;
     struct ifreq if_mac;
     struct sockaddr_ll socket_address;
+    int ratio = 2;
+    int min_time = 1;
+    int max_time = 4000;
+    int sq_num = 2;
+    int an = min_time * pow(ratio, (sq_num-1));
+    int st_num_ini = 0;
+    int st_num = 3;
+    int pacotes_enviados = 0;
+
 
  /* Get interface name */
     char ifName[IFNAMSIZ];
@@ -145,20 +156,148 @@ int main(int argc, char *argv[]){
     char buffer_payload[TAMANHO_BUF];
 
     gettimeofday(&total1, NULL);
-    for(int i=0; i<qtd_pacotes;i++){
-        t_buffer = criaPacote(buffer);
-        for(int i=0; i<t_buffer; i++) if(i>21) buffer_payload[i-22] = buffer[i];
 
-        if(tipo_seguranca==1) geraCifraAES(cifra_do_payload, buffer_payload, chave, t_buffer);
-        if(tipo_seguranca==2) cifra_do_payload = geraCifraRSA(buffer_payload, pubk, privk, t_buffer);
+    t_buffer = constroiPacote(buffer, sq_num, st_num_ini);
+    for(int i=0; i<t_buffer; i++) if(i>21) buffer_payload[i-22] = buffer[i];
 
-        if(adicionaNoPacote(buffer, cifra_do_payload, 22, t_buffer-22)!=t_buffer) printf("Falha na cifra do payload.\n");
+    if(tipo_seguranca==1) geraCifraAES(cifra_do_payload, buffer_payload, chave, t_buffer);
+    if(tipo_seguranca==2) cifra_do_payload = geraCifraRSA(buffer_payload, pubk, privk, t_buffer);
 
-        if(sendto(sockfd, buffer, t_buffer, 0,
-            (struct sockaddr*)&socket_address,
-                sizeof(struct sockaddr_ll)) < 0)
-                    printf("Falha no envio\n");
+    if(adicionaNoPacote(buffer, cifra_do_payload, 22, t_buffer-22)!=t_buffer) printf("Falha na cifra do payload.\n");
+
+    if(sendto(sockfd, buffer, t_buffer, 0,
+        (struct sockaddr*)&socket_address,
+            sizeof(struct sockaddr_ll)) < 0)
+                printf("Falha no envio\n");
+
+
+    while(1){
+        int aux_sqnum = 0;
+        if(st_num_ini == st_num){
+            while (an < (max_time/ratio))
+            {
+                sq_num = sq_num + 1;
+                an = min_time * (pow(ratio, sq_num-1));
+                printf("%d\n", an);
+                sleep(an/1000);
+                aux_sqnum = aux_sqnum + 1;
+
+                t_buffer = constroiPacote(buffer, sq_num, st_num_ini);
+                for(int i=0; i<t_buffer; i++) if(i>21) buffer_payload[i-22] = buffer[i];
+                if(tipo_seguranca==1) geraCifraAES(cifra_do_payload, buffer_payload, chave, t_buffer);
+                if(tipo_seguranca==2) cifra_do_payload = geraCifraRSA(buffer_payload, pubk, privk, t_buffer);
+
+                if(adicionaNoPacote(buffer, cifra_do_payload, 22, t_buffer-22)!=t_buffer) printf("Falha na cifra do payload.\n");
+
+                if(sendto(sockfd, buffer, t_buffer, 0,
+                    (struct sockaddr*)&socket_address,
+                        sizeof(struct sockaddr_ll)) < 0)
+                            printf("Falha no envio\n");
+
+                pacotes_enviados = pacotes_enviados + 1;
+            }
+            if(an >= max_time/ratio){
+                an = max_time;
+                printf("%d\n", an);
+                sleep(an/1000);
+                aux_sqnum = aux_sqnum + 1;
+                    
+                t_buffer = constroiPacote(buffer, sq_num, st_num_ini);
+                for(int i=0; i<t_buffer; i++) if(i>21) buffer_payload[i-22] = buffer[i];
+                if(tipo_seguranca==1) geraCifraAES(cifra_do_payload, buffer_payload, chave, t_buffer);
+                if(tipo_seguranca==2) cifra_do_payload = geraCifraRSA(buffer_payload, pubk, privk, t_buffer);
+
+                if(adicionaNoPacote(buffer, cifra_do_payload, 22, t_buffer-22)!=t_buffer) printf("Falha na cifra do payload.\n");
+
+                if(sendto(sockfd, buffer, t_buffer, 0,
+                    (struct sockaddr*)&socket_address,
+                        sizeof(struct sockaddr_ll)) < 0)
+                            printf("Falha no envio\n");
+
+                pacotes_enviados = pacotes_enviados + 1;
+                
+            }
+        }
+
+        if(st_num_ini < st_num){
+            printf("%d\n", st_num_ini);
+            while(an < max_time/ratio){
+                sq_num = sq_num + 1;
+                an = min_time * (pow(ratio, sq_num-1));
+                printf("%d\n", an);
+                sleep(an/1000);
+                aux_sqnum = aux_sqnum + 1;
+                t_buffer = constroiPacote(buffer, sq_num, st_num_ini);
+                for(int i=0; i<t_buffer; i++) if(i>21) buffer_payload[i-22] = buffer[i];
+                if(tipo_seguranca==1) geraCifraAES(cifra_do_payload, buffer_payload, chave, t_buffer);
+                if(tipo_seguranca==2) cifra_do_payload = geraCifraRSA(buffer_payload, pubk, privk, t_buffer);
+
+                if(adicionaNoPacote(buffer, cifra_do_payload, 22, t_buffer-22)!=t_buffer) printf("Falha na cifra do payload.\n");
+
+                if(sendto(sockfd, buffer, t_buffer, 0,
+                    (struct sockaddr*)&socket_address,
+                        sizeof(struct sockaddr_ll)) < 0)
+                            printf("Falha no envio\n");
+
+                pacotes_enviados = pacotes_enviados + 1;
+                
+            }
+            if(an >= max_time/ratio){
+                sq_num = sq_num + 1;
+                an = max_time;
+                printf("%d\n", an);
+                sleep(an/1000);
+                aux_sqnum = aux_sqnum + 1;
+
+            t_buffer = constroiPacote(buffer, sq_num, st_num_ini);
+            for(int i=0; i<t_buffer; i++) if(i>21) buffer_payload[i-22] = buffer[i];
+            if(tipo_seguranca==1) geraCifraAES(cifra_do_payload, buffer_payload, chave, t_buffer);
+            if(tipo_seguranca==2) cifra_do_payload = geraCifraRSA(buffer_payload, pubk, privk, t_buffer);
+
+            if(adicionaNoPacote(buffer, cifra_do_payload, 22, t_buffer-22)!=t_buffer) printf("Falha na cifra do payload.\n");
+
+            if(sendto(sockfd, buffer, t_buffer, 0,
+                (struct sockaddr*)&socket_address,
+                    sizeof(struct sockaddr_ll)) < 0)
+                        printf("Falha no envio\n");
+
+                pacotes_enviados = pacotes_enviados + 1;                
+                sq_num = 2;
+                an = min_time * (pow(ratio, sq_num-1));
+                printf("%s\n", "Comeca a retransmissao....");
+            }
+            st_num_ini = st_num_ini + 1;
+            aux_sqnum = 0;
+        }
+        else{
+            sleep(max_time/1000);
+            aux_sqnum = aux_sqnum + 1;
+            t_buffer = constroiPacote(buffer, sq_num, st_num_ini);
+            for(int i=0; i<t_buffer; i++) if(i>21) buffer_payload[i-22] = buffer[i];
+            if(tipo_seguranca==1) geraCifraAES(cifra_do_payload, buffer_payload, chave, t_buffer);
+            if(tipo_seguranca==2) cifra_do_payload = geraCifraRSA(buffer_payload, pubk, privk, t_buffer);
+
+            if(adicionaNoPacote(buffer, cifra_do_payload, 22, t_buffer-22)!=t_buffer) printf("Falha na cifra do payload.\n");
+
+            if(sendto(sockfd, buffer, t_buffer, 0,
+                (struct sockaddr*)&socket_address,
+                    sizeof(struct sockaddr_ll)) < 0)
+                        printf("Falha no envio\n");
+
+            pacotes_enviados = pacotes_enviados + 1;
+        }
+        gettimeofday(&total2, NULL);
+        printf("Tempo de PROCESSAMENTO MEDIO de TODOS os [%d] pacotes = %ld microssegundos\n", pacotes_enviados,
+                    (((total2.tv_sec-total1.tv_sec) * 1000000) + (total2.tv_usec-total1.tv_usec))/qtd_pacotes);
+        //printf("\n");
+        printf("Tamanho do pacote final: %d\n\n",t_buffer);
+        if(tipo_seguranca==3){
+            gcry_sexp_release(pubk);
+            gcry_sexp_release(privk);
+
+        }
     }
+    
     gettimeofday(&total2, NULL);
     long int t_total = (((total2.tv_sec-total1.tv_sec) * 1000000) + (total2.tv_usec-total1.tv_usec))/qtd_pacotes;
     printf("Tempo de PROCESSAMENTO MEDIO de cada um dos [%d] pacotes  = %ld microssegundos\n", qtd_pacotes, t_total);
@@ -170,6 +309,18 @@ int main(int argc, char *argv[]){
     }
     return 0;
 }
+
+int constroiPacote(char *buffer, int sq_num, int st_num){
+    uint16_t AppID = 65535;
+    unsigned char *gocbRef = "teste IED Rafael";
+    unsigned char *datSet = "Device900/GOOSE1";
+    unsigned char *goID = "900_GOOSE1";
+    uint16_t stNum = st_num;
+    uint16_t sqNum = sq_num;
+
+    return criaPacoteCompleto(buffer, (uint16_t)AppID, gocbRef, datSet, goID, (uint8_t)stNum, (uint8_t)sqNum);
+}
+
 
 int criaPacote(char *buffer){
     uint16_t AppID = 65535;
