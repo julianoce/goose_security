@@ -73,7 +73,7 @@ int main(int argc, char *argv[]){
     int sockfd;
     int ratio = 2;
     int min_time = 1;
-    int max_time = 5000;
+    int max_time = 4000;
     int sq_num = 2;
     int an = min_time * pow(ratio, (sq_num-1));
     int st_num_ini = 0;
@@ -302,7 +302,6 @@ int main(int argc, char *argv[]){
                 sq_num = 2;
                 an = min_time * (pow(ratio, sq_num-1));
                 printf("%s\n", "Comeca a retransmissao....");
-                printf("%d\n", an);
             }
             st_num_ini = st_num_ini + 1;
             aux_sqnum = 0;

@@ -1,6 +1,6 @@
 /* Para rodar manualmente no linux, use:
  * sudo gcc envia_goose_cifra_tudo_v1.2.c aes.c sha256.c gcry.c -lgcrypt -lgpg-error -o cifrar_pacote_completo
- * sudo ./cifrar_pacote_completo
+ *  
  * parâmetro 1 significa quantidade de pacotes, deve ser inteiro positivo
  * parâmetro 2 significa modo de seguranca, varia de 1 a 2
  * deve ser alterado o limite do S.O. de arquivos abertos com o comando:
@@ -43,7 +43,7 @@ void imprimePacote(char *msg, int tamanho);
 void enviaPacote(char *mensagem, int tamanho);
 int adicionaNoPacote(char *pacote, char *conteudo, int tamanho_pacote, int tamanho_conteudo);
 void *geraHash(char *resposta, char *pacote, int tamanho);
-void *geraCifraAES(char *resposta, char *texto, char *chave, int tamanho);
+void *geraCifraAES(char *resposta, char *texto, char *chave, int tamanho);  
 char *geraCifraRSA(char *texto, gcry_sexp_t pub_key, gcry_sexp_t priv_key, int tamanho);
 
 int main(int argc, char *argv[]){
@@ -65,7 +65,7 @@ int main(int argc, char *argv[]){
     struct ifreq if_mac;
     struct sockaddr_ll socket_address;
 
-    /* Get interface name */
+ /* Get interface name */
     char ifName[IFNAMSIZ];
     strcpy(ifName, DEFAULT_IF);
 
@@ -147,12 +147,12 @@ int main(int argc, char *argv[]){
     gettimeofday(&total1, NULL);
     for(int i=0; i<qtd_pacotes;i++){
         t_buffer = criaPacote(buffer);
-        for(int i=0; i<t_buffer; i++) if(i>13) buffer_payload[i-14] = buffer[i];
+        for(int i=0; i<t_buffer; i++) if(i>21) buffer_payload[i-22] = buffer[i];
 
         if(tipo_seguranca==1) geraCifraAES(cifra_do_payload, buffer_payload, chave, t_buffer);
         if(tipo_seguranca==2) cifra_do_payload = geraCifraRSA(buffer_payload, pubk, privk, t_buffer);
 
-        if(adicionaNoPacote(buffer, cifra_do_payload, 14, t_buffer-14)!=t_buffer) printf("Falha na cifra do payload.\n");
+        if(adicionaNoPacote(buffer, cifra_do_payload, 22, t_buffer-22)!=t_buffer) printf("Falha na cifra do payload.\n");
 
         if(sendto(sockfd, buffer, t_buffer, 0,
             (struct sockaddr*)&socket_address,
@@ -173,7 +173,7 @@ int main(int argc, char *argv[]){
 
 int criaPacote(char *buffer){
     uint16_t AppID = 65535;
-    unsigned char *gocbRef = "teste IED Rafael";
+    unsigned char *gocbRef = "teste IED Julia";
     unsigned char *datSet = "Device900/GOOSE1";
     unsigned char *goID = "900_GOOSE1";
     uint8_t stNum = 0x01;
@@ -226,82 +226,83 @@ int criaPacoteCompleto(char *buffer, uint16_t AppID, char *gocbRef, char *datSet
     buffer[tx_len++] = 0x61;//x61
     //goosePDU LENGTH
     int local_goosePDU_length = tx_len;
-    buffer[tx_len++] = (uint8_t) 0;
+    // buffer[tx_len++] = (uint16_t) 0;
+    buffer[tx_len++]=0x00;
     //goosePDU DATA
 
     buffer[tx_len++] = 0x80;                                            //gocbRef TAG
     buffer[tx_len++] = (uint8_t) strlen(gocbRef);                       //gocbRef Length
     for(int i=0;i<strlen(gocbRef);i++) buffer[tx_len++] = gocbRef[i];   //gocbRef Data
-    buffer[local_goosePDU_length] += 2 + strlen(gocbRef);               //atualiza size APDU
+    // buffer[local_goosePDU_length] += 2 + strlen(gocbRef);               //atualiza size APDU
 
     buffer[tx_len++] = 0x81;                                            //timeAllowedtoLive TAG
     buffer[tx_len++] = (uint8_t) 2;                                     //timeAllowedtoLive Length
     uint16_t goose_ttl = 4000;                                          //timeAllowedtoLive Data
     buffer[tx_len++] = goose_ttl>>8;                                    //timeAllowedtoLive
     buffer[tx_len++] = goose_ttl;                                       //timeAllowedtoLive
-    buffer[local_goosePDU_length] += 2 + sizeof(goose_ttl);             //atualiza size APDU
+    // buffer[local_goosePDU_length] += 2 + sizeof(goose_ttl);             //atualiza size APDU
 
     buffer[tx_len++] = 0x82;                                            //datSet TAG
     buffer[tx_len++] = (uint8_t) strlen(datSet);                        //datSet Length
     for(int i=0;i<strlen(datSet);i++) buffer[tx_len++] = datSet[i];     //datSet Data
-    buffer[local_goosePDU_length] += 2 + strlen(datSet);                //atualiza size APDU
+    // buffer[local_goosePDU_length] += 2 + strlen(datSet);                //atualiza size APDU
 
     buffer[tx_len++] = 0x83;                                            //goID TAG
     buffer[tx_len++] = (uint8_t) strlen(goID);                          //goID Length
     for(int i=0;i<strlen(goID);i++) buffer[tx_len++] = goID[i];         //goID Data
-    buffer[local_goosePDU_length] += 2 + strlen(goID);                  //atualiza size APDU
+    // buffer[local_goosePDU_length] += 2 + strlen(goID);                  //atualiza size APDU
 
     buffer[tx_len++] = 0x84;                                            //time TAG
-    buffer[tx_len++] = 0x08;                       //time Length
-    gettimeofday(&agora, NULL);                                         //time
+    buffer[tx_len++] = 0x08;                    //time Length
+    gettimeofday(&agora, NULL);                                           //time
     int segundos = agora.tv_sec-10800;//menos 3 horas, horario BSB      //time
     int usegundos= agora.tv_usec;                                       //time
     for(int i=4; i>0; i--) buffer[tx_len++] = segundos>>8*(i-1);        //4 bytes
     for(int i=3; i>0; i--) buffer[tx_len++] = usegundos>>8*(i-1);       //3 bytes
     buffer[tx_len++] = 0x00; //time quality flag, 1 byte                //time
-    buffer[local_goosePDU_length] += 2 + sizeof(agora);                 //atualiza size APDU
+    // buffer[local_goosePDU_length] += 2 + sizeof(agora);                 //atualiza size APDU
 
     buffer[tx_len++] = 0x85;                                            //stNum TAG
-    buffer[tx_len++] = stNum;                                           //stNum Length
-    buffer[tx_len++] = sizeof(stNum);                                   //stNum Data
-    buffer[local_goosePDU_length] += 2 + sizeof(stNum);                 //atualiza size APDU
+    buffer[tx_len++] = 0x01;                                           //stNum Length
+    buffer[tx_len++] = stNum;                                     //stNum Data
+    // buffer[local_goosePDU_length] += 2 + sizeof(stNum);                 //atualiza size APDU
 
     buffer[tx_len++] = 0x86;                                            //sqNum TAG
-    buffer[tx_len++] = sqNum;                                           //sqNum Length
-    buffer[tx_len++] = sizeof(sqNum);                                   //sqNum Data
-    buffer[local_goosePDU_length] += 2 + sizeof(sqNum);                 //atualiza size APDU
+    buffer[tx_len++] = 0x01;                                           //sqNum Length
+    buffer[tx_len++] = sqNum;                                   //sqNum Data
+    // buffer[local_goosePDU_length] += 2 + sizeof(sqNum);                 //atualiza size APDU
 
     buffer[tx_len++] = 0x87;                                           //test TAG
     buffer[tx_len++] = (uint8_t) 1;                                    //test Length
     buffer[tx_len++] = 0x01;                                           //test Data
-    buffer[local_goosePDU_length] += 3;                                 //atualiza size APDU
+    // buffer[local_goosePDU_length] += 3;                                 //atualiza size APDU
 
     buffer[tx_len++] = 0x88;                                           //confRev TAG
     buffer[tx_len++] = (uint8_t) 1;                                    //confRev Length
     buffer[tx_len++] = 0x01;                                           //confRev Data
-    buffer[local_goosePDU_length] += 3;                                 //atualiza size APDU
+    // buffer[local_goosePDU_length] += 3;                                 //atualiza size APDU
 
     buffer[tx_len++] = 0x89;                                           //ndsCom TAG
     buffer[tx_len++] = (uint8_t) 1;                                    //ndsCom Length
     buffer[tx_len++] = 0x00;                                           //ndsCom Data
-    buffer[local_goosePDU_length] += 3;                                 //atualiza size APDU
+    // buffer[local_goosePDU_length] += 3;                                 //atualiza size APDU
 
     buffer[tx_len++] = 0x8A;                                           //numDatSetEntries TAG
     buffer[tx_len++] = (uint8_t) 1;                                    //numDatSetEntries Length
     buffer[tx_len++] = 0x01;                                           //numDatSetEntries Data
-    buffer[local_goosePDU_length] += 3;                                 //atualiza size APDU
+    // buffer[local_goosePDU_length] += 3;                                 //atualiza size APDU
 
     buffer[tx_len++] = 0xAB;                                           //allData TAG
     buffer[tx_len++] = (uint8_t) 3;                                    //allData Length
     buffer[tx_len++] = 0x83;                                           //boolean TAG
     buffer[tx_len++] = 0x01;                                           //boolean Length
     buffer[tx_len++] = 0x00;                                           //boolean Data
-    buffer[local_goosePDU_length] += 5;                                 //atualiza size APDU
+    // buffer[local_goosePDU_length] += 5;                                 //atualiza size APDU
 
 
     //aqui termina o goose APDU
 
-    int tamanho_final = 10 + buffer[local_goosePDU_length];//atualiza size goose cabecalho
+    int tamanho_final =  buffer[local_goosePDU_length] + 2;//atualiza size goose cabecalho
     buffer[local_goose_length] = tamanho_final>>8;      //GOOSE LENGTH
     buffer[local_goose_length+1] = tamanho_final;       //GOOSE LENGTH
     return tx_len;
