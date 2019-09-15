@@ -33,7 +33,7 @@
 //#define ETHER_TYPE	0x8100 //ETH_P_8021Q
 //#define ETHER_TYPE	0x0800 //ETH_P_IP
 
-#define DEFAULT_IF      "enxb827ebe9a3f0"
+#define DEFAULT_IF      "enp1s0"
 //#define DEFAULT_IF      "wlan0"
 #define TAMANHO_BUF     256
 
@@ -61,6 +61,7 @@ int main(int argc, char *argv[])
 	struct sockaddr_storage their_addr;
 	uint8_t buffer[TAMANHO_BUF];
 	char ifName[IFNAMSIZ];
+    clock_t t1_clock, t2_clock;
 
 	strcpy(ifName, DEFAULT_IF);
 	uint8_t *chave = "\x2b\x7e\x15\x16\x28\xae\xd2\xa6\xab\xf7\x15\x88\x09\xcf\x4f\x3c";
@@ -177,7 +178,10 @@ int main(int argc, char *argv[])
         if (buffer[12] == 0x88 && buffer[13] == 0xb8) {
             //printf("Mensagem Goose Recebida!\n");
             y++;
-            if(count==0) gettimeofday(&total1, NULL);
+            if(count==0){
+                gettimeofday(&total1, NULL);
+                t1_clock = clock();
+            } 
             //calcular a segurança do GOOSE
             uint8_t payload[numbytes-tam_seguranca];
             for(int i=0; i<numbytes-tam_seguranca; i++) payload[i] = buffer[i];
@@ -230,7 +234,11 @@ int main(int argc, char *argv[])
         }
     }
     gettimeofday(&total2, NULL);
+    t2_clock = clock();
 
+
+    float diff = ((float)(t2_clock - t1_clock) / 1000000.0F ) * 1000;   
+    printf("%f\n",diff/qtd_pacotes); 
     long int resultado = (((total2.tv_sec-total1.tv_sec) * 1000000) + (total2.tv_usec-total1.tv_usec))/qtd_pacotes;
     printf("Tempo de RECEBIMENTO MEDIO = %ld microssegundos\n",resultado);
     printf("Qtd de pacotes recebidos: %d\n", x);

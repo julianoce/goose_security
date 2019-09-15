@@ -30,7 +30,7 @@
 #define DESTINO_MAC5    0x01
 
 // #define DEFAULT_IF      "enxb827ebe9a3f0"
-#define DEFAULT_IF      "wlp3s0"
+#define DEFAULT_IF      "en0"
 #define TAMANHO_BUF     512
 
 #define IPAD 0x36 //definido na RFC2104
@@ -57,6 +57,8 @@ int main(int argc, char *argv[]){
     int qtd_pacotes = 1;
     int tipo_seguranca = 0;
     int conteudo_extra = 0;
+    clock_t t1, t2;
+
     if(argc > 1) sscanf(argv[1], "%d", &qtd_pacotes);
     if(argc > 2) sscanf(argv[2], "%d", &tipo_seguranca);
     if(argc > 3) sscanf(argv[3], "%d", &conteudo_extra);
@@ -71,10 +73,10 @@ int main(int argc, char *argv[]){
 
     //inicio do codigo de envio*********************
     int sockfd;
-    int ratio = 2;
+    int ratio = 4;
     int min_time = 1;
-    int max_time = 4000;
-    int sq_num = 2;
+    int max_time = 1000;
+    int sq_num = 1;
     int an = min_time * pow(ratio, (sq_num-1));
     int st_num_ini = 0;
     int st_num = 3;
@@ -119,6 +121,8 @@ int main(int argc, char *argv[]){
     gcry_error_t err;
     gcry_sexp_t pubk, privk;
     if(tipo_seguranca==3){
+        t1 = clock();
+
         FILE* lockf = fopen("rsa-key.sp", "rb");
         if (!lockf) xerr("fopen() falhou");
         /* Grab a key pair password and create an AES context with it. */
@@ -175,7 +179,7 @@ int main(int argc, char *argv[]){
             for(int i=0; i<conteudo_extra; i++) preenchimento[i] = 0xCA;
             t_buffer = adicionaNoPacote(buffer, preenchimento, t_buffer, conteudo_extra);
         }
-    
+
     while(1){
         int aux_sqnum = 0;
         if(st_num_ini == st_num){
@@ -207,6 +211,8 @@ int main(int argc, char *argv[]){
                 (struct sockaddr*)&socket_address,
                     sizeof(struct sockaddr_ll)) < 0)
                         printf("Falha no envio\n");
+                
+
                 pacotes_enviados = pacotes_enviados + 1;
             }
             if(an >= max_time/ratio){
@@ -271,6 +277,9 @@ int main(int argc, char *argv[]){
                 pacotes_enviados = pacotes_enviados + 1;
                 
             }
+            t2 = clock();
+            gettimeofday(&total2, NULL);
+
             if(an >= max_time/ratio){
                 sq_num = sq_num + 1;
                 an = max_time;
@@ -357,9 +366,10 @@ int main(int argc, char *argv[]){
         //     if(i == 9) gettimeofday(&tempo2, NULL);
 
         // }
-        gettimeofday(&total2, NULL);
+        float diff = ((float)(t2 - t1) / 1000000.0F ) * 1000;   
+        printf("%f\n",diff/pacotes_enviados); 
         printf("Tempo de PROCESSAMENTO MEDIO de TODOS os [%d] pacotes = %ld microssegundos\n", pacotes_enviados,
-                    (((total2.tv_sec-total1.tv_sec) * 1000000) + (total2.tv_usec-total1.tv_usec))/qtd_pacotes);
+                    (((total2.tv_sec-total1.tv_sec)) + (total2.tv_usec-total1.tv_usec))/pacotes_enviados);
         //printf("\n");
         printf("Tamanho do pacote final: %d\n\n",t_buffer);
         if(tipo_seguranca==3){
