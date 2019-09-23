@@ -29,8 +29,8 @@
 #define DESTINO_MAC4    0xa7
 #define DESTINO_MAC5    0x2e
 
-#define DEFAULT_IF      "wlp3s0"
-// #define DEFAULT_IF      "eth0"
+// #define DEFAULT_IF      "wlp3s0"
+#define DEFAULT_IF      "enp1s0f3"
 #define TAMANHO_BUF     512
 
 #define IPAD 0x36 //definido na RFC2104

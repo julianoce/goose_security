@@ -34,8 +34,8 @@
 //#define ETHER_TYPE	0x8100 //ETH_P_8021Q
 //#define ETHER_TYPE	0x0800 //ETH_P_IP
 
-// #define DEFAULT_IF      "eth0"
-#define DEFAULT_IF      "wlp3s0"
+#define DEFAULT_IF      "eth0"
+// #define DEFAULT_IF      "wlp3s0"
 #define TAMANHO_BUF     256
 
 #define IPAD 0x36 //definido na RFC2104
@@ -188,13 +188,13 @@ char *geraHMAC(char *msg, int tamanho, char *chave, int tamanho_chave);eused - i
             }
             /* Captura o indice da interface para enviar */
             memset(&if_idx, 0, sizeof(struct ifreq));
-            strncpy(if_idx.ifr_name, "wlp3s0", IFNAMSIZ-1);
+            strncpy(if_idx.ifr_name, "eth1", IFNAMSIZ-1);
             if (ioctl(sockfd, SIOCGIFINDEX, &if_idx) < 0)
                 perror("SIOCGIFINDEX");
 
             /* Captura o endereço MAC da interface para enviar */
             memset(&if_mac, 0, sizeof(struct ifreq));
-            strncpy(if_mac.ifr_name, "wlp3s0", IFNAMSIZ-1);
+            strncpy(if_mac.ifr_name, "eth1", IFNAMSIZ-1);
             if (ioctl(sockfd, SIOCGIFHWADDR, &if_mac) < 0)
                 perror("SIOCGIFHWADDR");
 

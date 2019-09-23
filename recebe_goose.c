@@ -33,7 +33,7 @@
 //#define ETHER_TYPE	0x8100 //ETH_P_8021Q
 //#define ETHER_TYPE	0x0800 //ETH_P_IP
 
-#define DEFAULT_IF      "eth0"
+#define DEFAULT_IF      "enp4s0f3"
 //#define DEFAULT_IF      "wlan0"
 #define TAMANHO_BUF     256
 
