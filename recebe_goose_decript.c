@@ -1,5 +1,5 @@
 /* Para rodar manualmente no linux, use:
- * sudo gcc gcry.c recebe_goose_decript.c aes.c sha256.c cmac.c -lgcrypt -lgpg-error -o recebe_goose_decript
+ * sudo gcc gcry.c recebe_goose_decript.c aes.c sha256.c cmac.c -lgcrypt -lgpg-error -lm -o recebe_goose_decript
  * sudo ./recebe_goose_decript 1 0
  * parâmetro 1 significa quantidade de pacotes, deve ser inteiro positivo
  * parâmetro 2 significa modo de seguranca, varia de 0 a 4
@@ -22,12 +22,12 @@
 #include "gcry.h"           //para cadastrar rsa
 #include "math.h"
 
-#define DESTINO_MAC0    0x3c
-#define DESTINO_MAC1    0xa8
-#define DESTINO_MAC2    0x2a
-#define DESTINO_MAC3    0xe4
-#define DESTINO_MAC4    0x00
-#define DESTINO_MAC5    0x17
+#define DESTINO_MAC0    0xe0
+#define DESTINO_MAC1    0xd5
+#define DESTINO_MAC2    0x5e
+#define DESTINO_MAC3    0xf6
+#define DESTINO_MAC4    0x90
+#define DESTINO_MAC5    0x78
 
 //#define ETHER_TYPE	0x0001 //ETH_P_802_3
 #define ETHER_TYPE	0x0003 //ETH_P_ALL
@@ -35,6 +35,8 @@
 //#define ETHER_TYPE	0x0800 //ETH_P_IP
 
 #define DEFAULT_IF      "eth0"
+#define DEFAULT_IF2      "eth1"
+
 // #define DEFAULT_IF      "wlp3s0"
 #define TAMANHO_BUF     256
 
@@ -52,7 +54,7 @@ int main(int argc, char *argv[])
     struct timeval total1, total2;
     int t_buffer;
 	char sender[INET6_ADDRSTRLEN];
-	int sockfd, ret, i;
+	int sockfd, ret, i, sock;
 	int sockopt;
 	ssize_t numbytes;
 	struct ifreq ifopts;	/* set promiscuous mode */
@@ -60,7 +62,7 @@ int main(int argc, char *argv[])
 	struct sockaddr_storage their_addr;
 	uint8_t buffer[TAMANHO_BUF];
     clock_t t1_clock, t2_clock;
-    int ratio = 6;
+    int ratio = 2;
     int min_time = 1;
     int max_time = 1000;
     int sq_num = 1;
@@ -75,8 +77,16 @@ int main(int argc, char *argv[])
    /* Get interface name */
     char ifName[IFNAMSIZ];
     strcpy(ifName, DEFAULT_IF);
+    
+    strcpy(ifName, DEFAULT_IF);
 
-	strcpy(ifName, DEFAULT_IF);
+    char ifName2[IFNAMSIZ];
+    strcpy(ifName2, DEFAULT_IF2);
+
+    strcpy(ifName2, DEFAULT_IF2);
+
+    
+
 	uint8_t *chave = "\x2b\x7e\x15\x16\x28\xae\xd2\xa6\xab\xf7\x15\x88\x09\xcf\x4f\x3c";
 
 	printf("\n#  ##### Programa Recebe Pkt Goose #####  #\n");
@@ -125,7 +135,6 @@ char *geraHMAC(char *msg, int tamanho, char *chave, int tamanho_chave);eused - i
 		exit(EXIT_FAILURE);
 	}
    
-    t1 = clock();
 
     
     printf("Recebedor de pacotes ativo, recebendo pacotes.\n");
@@ -177,25 +186,28 @@ char *geraHMAC(char *msg, int tamanho, char *chave, int tamanho_chave);eused - i
             uint8_t rabicho[tam_seguranca];
             for(int i=0; i<tam_seguranca; i++) rabicho[i] = buffer[(numbytes-tam_seguranca)+i];
 
+            
+            t1 = clock();
+
             if(strncmp(geraDecifraRSA(geraHash(payload, sizeof(payload)), pubk, privk, 32), rabicho, 32) != 0){
                         //printf("Cifra RSA incorreta.\n");
                         //return 0;
             }
 
-            if ((sockfd = socket(AF_PACKET, SOCK_RAW, IPPROTO_RAW)) == -1){
+            if ((sock = socket(AF_PACKET, SOCK_RAW, IPPROTO_RAW)) == -1){
                 perror("socket");
                 exit(1);
             }
             /* Captura o indice da interface para enviar */
             memset(&if_idx, 0, sizeof(struct ifreq));
-            strncpy(if_idx.ifr_name, "eth1", IFNAMSIZ-1);
-            if (ioctl(sockfd, SIOCGIFINDEX, &if_idx) < 0)
+            strncpy(if_idx.ifr_name, ifName2, IFNAMSIZ-1);
+            if (ioctl(sock, SIOCGIFINDEX, &if_idx) < 0)
                 perror("SIOCGIFINDEX");
 
             /* Captura o endereço MAC da interface para enviar */
             memset(&if_mac, 0, sizeof(struct ifreq));
-            strncpy(if_mac.ifr_name, "eth1", IFNAMSIZ-1);
-            if (ioctl(sockfd, SIOCGIFHWADDR, &if_mac) < 0)
+            strncpy(if_mac.ifr_name, ifName2, IFNAMSIZ-1);
+            if (ioctl(sock, SIOCGIFHWADDR, &if_mac) < 0)
                 perror("SIOCGIFHWADDR");
 
             /* Index of the network device */
@@ -203,7 +215,12 @@ char *geraHMAC(char *msg, int tamanho, char *chave, int tamanho_chave);eused - i
             /* Address length */
             socket_address.sll_halen = ETH_ALEN;
             //fim do codigo de envio************************
-
+            payload[0] = DESTINO_MAC0;
+            payload[1] = DESTINO_MAC1;
+            payload[2] = DESTINO_MAC2;
+            payload[3] = DESTINO_MAC3;
+            payload[4] = DESTINO_MAC4;
+            payload[5] = DESTINO_MAC5;
 
             int aux_sqnum = 0;
             if(st_num_ini == st_num){
@@ -215,7 +232,7 @@ char *geraHMAC(char *msg, int tamanho, char *chave, int tamanho_chave);eused - i
                     sleep(an/1000);
                     aux_sqnum = aux_sqnum + 1;
                 t_buffer = 109;
-                    if(sendto(sockfd, payload, t_buffer, 0,
+                    if(sendto(sock, payload, t_buffer, 0,
                     (struct sockaddr*)&socket_address,
                         sizeof(struct sockaddr_ll)) < 0)
                             printf("Falha no envio\n");
@@ -229,7 +246,7 @@ char *geraHMAC(char *msg, int tamanho, char *chave, int tamanho_chave);eused - i
                     sleep(an/1000);
                     aux_sqnum = aux_sqnum + 1;
                     t_buffer = 109;
-                    if(sendto(sockfd, payload, t_buffer, 0,
+                    if(sendto(sock, payload, t_buffer, 0,
                     (struct sockaddr*)&socket_address,
                         sizeof(struct sockaddr_ll)) < 0)
                             printf("Falha no envio\n");
@@ -247,7 +264,7 @@ char *geraHMAC(char *msg, int tamanho, char *chave, int tamanho_chave);eused - i
                     sleep(an/1000);
                     aux_sqnum = aux_sqnum + 1;
                     t_buffer = 109;
-                    if(sendto(sockfd, payload, t_buffer, 0,
+                    if(sendto(sock, payload, t_buffer, 0,
                     (struct sockaddr*)&socket_address,
                         sizeof(struct sockaddr_ll)) < 0)
                             printf("Falha no envio\n");
@@ -264,7 +281,7 @@ char *geraHMAC(char *msg, int tamanho, char *chave, int tamanho_chave);eused - i
                     aux_sqnum = aux_sqnum + 1;
                     t_buffer = 109;
 
-                    if(sendto(sockfd, payload, t_buffer, 0,
+                    if(sendto(sock, payload, t_buffer, 0,
                     (struct sockaddr*)&socket_address,
                         sizeof(struct sockaddr_ll)) < 0)
                             printf("Falha no envio\n");
@@ -284,7 +301,7 @@ char *geraHMAC(char *msg, int tamanho, char *chave, int tamanho_chave);eused - i
                 sleep(max_time/1000);
                 aux_sqnum = aux_sqnum + 1;
                 t_buffer = 109;                
-                if(sendto(sockfd, payload, t_buffer, 0,
+                if(sendto(sock, payload, t_buffer, 0,
                     (struct sockaddr*)&socket_address,
                         sizeof(struct sockaddr_ll)) < 0)
                             printf("Falha no envio\n");
@@ -305,7 +322,7 @@ char *geraHMAC(char *msg, int tamanho, char *chave, int tamanho_chave);eused - i
     printf("Qtd de pacotes GOOSE recebidos: %d\n", y);
     printf("\n====================  FIM!  ====================\n\n");
 
-	close(sockfd);
+	close(sock);
 	return 0;
 }
 

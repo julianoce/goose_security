@@ -25,12 +25,12 @@
 #define DESTINO_MAC0    0xb8
 #define DESTINO_MAC1    0x27
 #define DESTINO_MAC2    0xeb
-#define DESTINO_MAC3    0xb8
-#define DESTINO_MAC4    0xa7
-#define DESTINO_MAC5    0x2e
+#define DESTINO_MAC3    0xfc
+#define DESTINO_MAC4    0x23
+#define DESTINO_MAC5    0x69
 
 // #define DEFAULT_IF      "wlp3s0"
-#define DEFAULT_IF      "enp1s0f3"
+#define DEFAULT_IF      "enp4s0f3"
 #define TAMANHO_BUF     512
 
 #define IPAD 0x36 //definido na RFC2104
@@ -73,7 +73,7 @@ int main(int argc, char *argv[]){
 
     //inicio do codigo de envio*********************
     int sockfd;
-    int ratio = 6;
+    int ratio = 2;
     int min_time = 1;
     int max_time = 1000;
     int sq_num = 1;
@@ -277,6 +277,8 @@ int main(int argc, char *argv[]){
                 pacotes_enviados = pacotes_enviados + 1;
                 t2 = clock();
                 gettimeofday(&total2, NULL);
+                float diff = ((float)(t2 - t1) / 1000000.0F ) * 1000;   
+                printf("%f\n",diff); 
                 
             }
 
@@ -307,6 +309,10 @@ int main(int argc, char *argv[]){
                 (struct sockaddr*)&socket_address,
                     sizeof(struct sockaddr_ll)) < 0)
                         printf("Falha no envio\n");
+                t2 = clock();
+                gettimeofday(&total2, NULL);
+                float diff = ((float)(t2 - t1) / 1000000.0F ) * 1000;   
+                printf("%f\n",diff); 
                 pacotes_enviados = pacotes_enviados + 1;                
                 sq_num = 2;
                 an = min_time * (pow(ratio, sq_num-1));
@@ -366,8 +372,6 @@ int main(int argc, char *argv[]){
         //     if(i == 9) gettimeofday(&tempo2, NULL);
 
         // }
-        float diff = ((float)(t2 - t1) / 1000000.0F ) * 1000;   
-        printf("%f\n",diff); 
         printf("Tempo de PROCESSAMENTO MEDIO de TODOS os [%d] pacotes = %ld microssegundos\n", pacotes_enviados,
                     (((total2.tv_sec-total1.tv_sec)) + (total2.tv_usec-total1.tv_usec))/pacotes_enviados);
         //printf("\n");
