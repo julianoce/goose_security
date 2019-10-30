@@ -75,7 +75,7 @@ int main(int argc, char *argv[]){
 
     //inicio do codigo de envio*********************
     int sockfd;
-    int ratio = 6;
+    int ratio = 4;
     int min_time = 1;
     int max_time = 1000;
     int sq_num = 1;

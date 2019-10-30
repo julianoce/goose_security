@@ -1,0 +1,15 @@
+2
+Pacote enviado com atraso
+4
+Pacote enviado com atraso
+8
+Pacote enviado com atraso
+16
+Pacote enviado com atraso
+32
+Pacote enviado com atraso
+64
+128
+256
+512
+1000
