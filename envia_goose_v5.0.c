@@ -22,15 +22,15 @@
 #include "gcry.h"           //para cadastrar rsa
 #include <math.h>
 // #include <dos.h>
-#define DESTINO_MAC0    0x34
-#define DESTINO_MAC1    0x97
-#define DESTINO_MAC2    0xf6
-#define DESTINO_MAC3    0x7d
-#define DESTINO_MAC4    0x92
-#define DESTINO_MAC5    0x90
+#define DESTINO_MAC0    0xb8
+#define DESTINO_MAC1    0x27
+#define DESTINO_MAC2    0xeb
+#define DESTINO_MAC3    0xb8
+#define DESTINO_MAC4    0xa7
+#define DESTINO_MAC5    0x2e
 
 // #define DEFAULT_IF      "wlp3s0"
-#define DEFAULT_IF      "enp0s31f6"
+#define DEFAULT_IF      "eth0"
 #define TAMANHO_BUF     512
 
 #define IPAD 0x36 //definido na RFC2104

@@ -1,0 +1,45 @@
+T1 comeco criptografia: 6.608000
+T2 fim criptografia: 6.759000
+T1 comeco criptografia: 6.979000
+T2 fim criptografia: 7.119000
+T1 comeco criptografia: 7.344000
+T2 fim criptografia: 7.484000
+T1 comeco criptografia: 7.666000
+T2 fim criptografia: 7.815000
+-------------------------------
+T1 comeco criptografia: 6.644000
+T2 fim criptografia: 6.796000
+T1 comeco criptografia: 7.051000
+T2 fim criptografia: 7.192000
+T1 comeco criptografia: 7.453000
+T2 fim criptografia: 7.593000
+T1 comeco criptografia: 7.780000
+T2 fim criptografia: 7.930000
+-------------------------------
+T1 comeco criptografia: 6.413000
+T2 fim criptografia: 6.564000
+T1 comeco criptografia: 6.774000
+T2 fim criptografia: 6.917000
+T1 comeco criptografia: 7.143000
+T2 fim criptografia: 7.285000
+T1 comeco criptografia: 7.463000
+T2 fim criptografia: 7.615000
+-------------------------------
+T1 comeco criptografia: 6.399000
+T2 fim criptografia: 6.548000
+T1 comeco criptografia: 6.767000
+T2 fim criptografia: 6.972000
+T1 comeco criptografia: 7.213000
+T2 fim criptografia: 7.353000
+T1 comeco criptografia: 7.549000
+T2 fim criptografia: 7.699000
+-------------------------------
+T1 comeco criptografia: 6.267000
+T2 fim criptografia: 6.418000
+T1 comeco criptografia: 6.641000
+T2 fim criptografia: 6.782000
+T1 comeco criptografia: 7.010000
+T2 fim criptografia: 7.150000
+T1 comeco criptografia: 7.317000
+T2 fim criptografia: 7.467000
+-------------------------------

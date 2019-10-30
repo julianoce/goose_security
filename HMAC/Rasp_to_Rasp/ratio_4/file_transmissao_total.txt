@@ -1,0 +1,55 @@
+T1 comeco total: 6.476000
+T2 fim total: 6.829000
+T1 comeco total: 6.892000
+T2 fim total: 7.161000
+T1 comeco total: 7.181000
+T2 fim total: 7.531000
+T1 comeco total: 7.550000
+T2 fim total: 7.801000
+T1 comeco total: 7.820000
+T2 fim total: 8.142000
+-------------------------------
+T1 comeco total: 6.272000
+T2 fim total: 6.641000
+T1 comeco total: 6.712000
+T2 fim total: 7.002000
+T1 comeco total: 7.024000
+T2 fim total: 7.397000
+T1 comeco total: 7.419000
+T2 fim total: 7.676000
+T1 comeco total: 7.698000
+T2 fim total: 8.059000
+-------------------------------
+T1 comeco total: 6.363000
+T2 fim total: 6.737000
+T1 comeco total: 6.810000
+T2 fim total: 7.112000
+T1 comeco total: 7.136000
+T2 fim total: 7.511000
+T1 comeco total: 7.533000
+T2 fim total: 7.792000
+T1 comeco total: 7.814000
+T2 fim total: 8.167000
+-------------------------------
+T1 comeco total: 6.268000
+T2 fim total: 6.620000
+T1 comeco total: 6.684000
+T2 fim total: 6.956000
+T1 comeco total: 6.975000
+T2 fim total: 7.327000
+T1 comeco total: 7.346000
+T2 fim total: 7.588000
+T1 comeco total: 7.607000
+T2 fim total: 7.922000
+-------------------------------
+T1 comeco total: 6.653000
+T2 fim total: 7.235000
+T1 comeco total: 7.329000
+T2 fim total: 7.641000
+T1 comeco total: 7.690000
+T2 fim total: 8.083000
+T1 comeco total: 8.134000
+T2 fim total: 8.491000
+T1 comeco total: 8.577001
+T2 fim total: 8.976001
+-------------------------------
