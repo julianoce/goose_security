@@ -1,0 +1,6 @@
+4
+Pacote enviado com atraso
+16
+64
+256
+1000

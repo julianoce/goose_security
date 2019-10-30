@@ -223,10 +223,12 @@ int main(int argc, char *argv[])
                     t2_decript = clock();
                 break;
                 case 4:
+                    t1_decript = clock();
                     if(strncmp(geraHMAC(payload, sizeof(payload), chave, 16), rabicho, 32) != 0){
                         printf("HMAC incorreto.\n");
                         return 0;
                     }
+                    t2_decript = clock();
                 break;
                 case 5:
                     AES_CMAC(L, payload, sizeof(payload), cmac);

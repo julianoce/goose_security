@@ -75,7 +75,7 @@ int main(int argc, char *argv[]){
 
     //inicio do codigo de envio*********************
     int sockfd;
-    int ratio = 4;
+    int ratio = 6;
     int min_time = 1;
     int max_time = 1000;
     int sq_num = 1;
@@ -211,7 +211,14 @@ int main(int argc, char *argv[]){
                         printf("Pacote enviado com atraso\n");
                     }
                 } 
-                if(tipo_seguranca==4) t_buffer = adicionaNoPacote(buffer, geraHMAC(buffer, t_buffer, chave, 16), t_buffer, SHA256_BLOCK_SIZE);
+                if(tipo_seguranca==4){
+                    t1_criptografia = clock();
+                    t_buffer = adicionaNoPacote(buffer, geraHMAC(buffer, t_buffer, chave, 16), t_buffer, SHA256_BLOCK_SIZE);
+                    t2_criptografia = clock();
+                    if((float)((t2_criptografia - t1_criptografia) / 1000000.0F ) * 1000 > (float)an/1000){
+                        printf("Pacote enviado com atraso\n");
+                    }
+                } 
                 if(tipo_seguranca==5){
                     unsigned char cmac[16];
                     AES_CMAC(L, buffer, t_buffer, cmac);
@@ -287,7 +294,14 @@ int main(int argc, char *argv[]){
                         printf("Pacote enviado com atraso\n");
                     }
                 } 
-                if(tipo_seguranca==4) t_buffer = adicionaNoPacote(buffer, geraHMAC(buffer, t_buffer, chave, 16), t_buffer, SHA256_BLOCK_SIZE);
+                if(tipo_seguranca==4){
+                    t1_criptografia = clock();
+                    t_buffer = adicionaNoPacote(buffer, geraHMAC(buffer, t_buffer, chave, 16), t_buffer, SHA256_BLOCK_SIZE);
+                    t2_criptografia = clock();
+                    if((float)((t2_criptografia - t1_criptografia) / 1000000.0F ) * 1000 > (float)an/1000){
+                        printf("Pacote enviado com atraso\n");
+                    }
+                } 
                 if(tipo_seguranca==5){
                     unsigned char cmac[16];
                     AES_CMAC(L, buffer, t_buffer, cmac);
@@ -331,7 +345,14 @@ int main(int argc, char *argv[]){
                         printf("Pacote enviado com atraso\n");
                     }
                 } 
-                if(tipo_seguranca==4) t_buffer = adicionaNoPacote(buffer, geraHMAC(buffer, t_buffer, chave, 16), t_buffer, SHA256_BLOCK_SIZE);
+                if(tipo_seguranca==4){
+                    t1_criptografia = clock();
+                    t_buffer = adicionaNoPacote(buffer, geraHMAC(buffer, t_buffer, chave, 16), t_buffer, SHA256_BLOCK_SIZE);
+                    t2_criptografia = clock();
+                    if((float)((t2_criptografia - t1_criptografia) / 1000000.0F ) * 1000 > (float)an/1000){
+                        printf("Pacote enviado com atraso\n");
+                    }
+                } 
                 if(tipo_seguranca==5){
                     unsigned char cmac[16];
                     AES_CMAC(L, buffer, t_buffer, cmac);
