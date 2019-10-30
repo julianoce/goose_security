@@ -33,7 +33,7 @@
 //#define ETHER_TYPE	0x8100 //ETH_P_8021Q
 //#define ETHER_TYPE	0x0800 //ETH_P_IP
 
-#define DEFAULT_IF      "enp1s0"
+#define DEFAULT_IF      "enp0s31f6"
 //#define DEFAULT_IF      "wlan0"
 #define TAMANHO_BUF     256
 
@@ -62,6 +62,13 @@ int main(int argc, char *argv[])
 	uint8_t buffer[TAMANHO_BUF];
 	char ifName[IFNAMSIZ];
     clock_t t1_clock, t2_clock;
+    clock_t t1_decript, t2_decript;
+
+    FILE * fp_total;
+    FILE * fp_decript;
+
+    fp_total = fopen ("file_transmissao_total_recebimento.txt","a");
+    fp_decript = fopen ("file_transmissao_decript.txt","a");
 
 	strcpy(ifName, DEFAULT_IF);
 	uint8_t *chave = "\x2b\x7e\x15\x16\x28\xae\xd2\xa6\xab\xf7\x15\x88\x09\xcf\x4f\x3c";
@@ -178,9 +185,11 @@ int main(int argc, char *argv[])
         if (buffer[12] == 0x88 && buffer[13] == 0xb8) {
             //printf("Mensagem Goose Recebida!\n");
             y++;
+
             if(count==0){
-                gettimeofday(&total1, NULL);
                 t1_clock = clock();
+
+                gettimeofday(&total1, NULL);
             } 
             //calcular a segurança do GOOSE
             uint8_t payload[numbytes-tam_seguranca];
@@ -206,10 +215,12 @@ int main(int argc, char *argv[])
                     }
                 break;
                 case 3:
+                    t1_decript = clock();
                     if(strncmp(geraDecifraRSA(geraHash(payload, sizeof(payload)), pubk, privk, 32), rabicho, 32) != 0){
                         //printf("Cifra RSA incorreta.\n");
                         //return 0;
                     }
+                    t2_decript = clock();
                 break;
                 case 4:
                     if(strncmp(geraHMAC(payload, sizeof(payload), chave, 16), rabicho, 32) != 0){
@@ -231,8 +242,11 @@ int main(int argc, char *argv[])
                     printf("Valor invalido!\n");
             }
             t2_clock = clock();
-            float diff = ((float)(t2_clock - t1_clock) / 1000000.0F ) * 1000;   
-            printf("Tempo no pacote atual: %f\n",diff); 
+            
+            fprintf (fp_total, "T1: %f\n",(float)(t1_clock / 1000000.0F ) * 1000);
+            fprintf (fp_total, "T2: %f\n",(float)(t2_clock / 1000000.0F ) * 1000);
+            fprintf (fp_decript, "T1: %f\n",(((float)t1_decript) / 1000000.0F ) * 1000);
+            fprintf (fp_decript, "T2: %f\n",(((float)t2_decript) / 1000000.0F ) * 1000);
             count++;
         }
     }
@@ -246,6 +260,11 @@ int main(int argc, char *argv[])
     printf("Qtd de pacotes GOOSE recebidos: %d\n", y);
     printf("\n====================  FIM!  ====================\n\n");
 
+    fprintf (fp_decript, "-------------------------------\n");
+    fprintf (fp_total, "-------------------------------\n");
+
+    fclose(fp_total);
+    fclose(fp_decript);
 	close(sockfd);
 	return ret;
 }

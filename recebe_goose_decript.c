@@ -50,7 +50,7 @@ char *geraDecifraRSA(char *cifra, gcry_sexp_t pub_key, gcry_sexp_t priv_key, int
 
 int main(int argc, char *argv[])
 {
-    int t1, t2;
+    int t1, t2, t3, t4;
     struct timeval total1, total2;
     int t_buffer;
 	char sender[INET6_ADDRSTRLEN];
@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
 	struct sockaddr_storage their_addr;
 	uint8_t buffer[TAMANHO_BUF];
     clock_t t1_clock, t2_clock;
-    int ratio = 2;
+    int ratio = 6;
     int min_time = 1;
     int max_time = 1000;
     int sq_num = 1;
@@ -73,6 +73,7 @@ int main(int argc, char *argv[])
     struct ifreq if_mac;
     struct sockaddr_ll socket_address;
     int pacotes_enviados = 0;
+    float decifragem;
 
    /* Get interface name */
     char ifName[IFNAMSIZ];
@@ -193,6 +194,10 @@ char *geraHMAC(char *msg, int tamanho, char *chave, int tamanho_chave);eused - i
                         //printf("Cifra RSA incorreta.\n");
                         //return 0;
             }
+            t2 = clock();
+            gettimeofday(&total2, NULL);
+            decifragem = t2-t1; 
+            printf("Decifragem:%f\n",decifragem); 
 
             if ((sock = socket(AF_PACKET, SOCK_RAW, IPPROTO_RAW)) == -1){
                 perror("socket");
@@ -221,7 +226,7 @@ char *geraHMAC(char *msg, int tamanho, char *chave, int tamanho_chave);eused - i
             payload[3] = DESTINO_MAC3;
             payload[4] = DESTINO_MAC4;
             payload[5] = DESTINO_MAC5;
-
+            t3 = clock();
             int aux_sqnum = 0;
             if(st_num_ini == st_num){
                 while (an < (max_time/ratio))
@@ -269,8 +274,10 @@ char *geraHMAC(char *msg, int tamanho, char *chave, int tamanho_chave);eused - i
                         sizeof(struct sockaddr_ll)) < 0)
                             printf("Falha no envio\n");
                     pacotes_enviados = pacotes_enviados + 1;
-                    t2 = clock();
+                    t4 = clock();
                     gettimeofday(&total2, NULL);
+                    float diff = ((float)(t4 - t3 + decifragem) / 1000000.0F ) * 1000;   
+                    printf("%f\n",diff); 
                 }
 
                 if(an >= max_time/ratio){
@@ -288,7 +295,9 @@ char *geraHMAC(char *msg, int tamanho, char *chave, int tamanho_chave);eused - i
                     pacotes_enviados = pacotes_enviados + 1;                
                     sq_num = 2;
                     an = min_time * (pow(ratio, sq_num-1));
-                    float diff = ((float)(t2 - t1) / 1000000.0F ) * 1000;   
+                    t4 = clock();
+                    gettimeofday(&total2, NULL);
+                    float diff = ((float)(t4 - t3 + decifragem) / 1000000.0F ) * 1000;   
                     printf("%f\n",diff); 
                     printf("%s\n", "Comeca a retransmissao....");
                 }

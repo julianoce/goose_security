@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
 	struct sockaddr_storage their_addr;
 	uint8_t buffer[TAMANHO_BUF];
     clock_t t1_clock, t2_clock;
-    int ratio = 2;
+    int ratio = 6;
     int min_time = 1;
     int max_time = 1000;
     int sq_num = 1;
@@ -288,6 +288,7 @@ char *geraHMAC(char *msg, int tamanho, char *chave, int tamanho_chave);eused - i
                     pacotes_enviados = pacotes_enviados + 1;                
                     sq_num = 2;
                     an = min_time * (pow(ratio, sq_num-1));
+                    t2 = clock();
                     float diff = ((float)(t2 - t1) / 1000000.0F ) * 1000;   
                     printf("%f\n",diff); 
                     printf("%s\n", "Comeca a retransmissao....");
@@ -308,7 +309,6 @@ char *geraHMAC(char *msg, int tamanho, char *chave, int tamanho_chave);eused - i
                             printf("Falha no envio\n");
                 pacotes_enviados = pacotes_enviados + 1;
             }
-            printf("count: %d\n", count);
             count++;
             
 
@@ -319,7 +319,7 @@ char *geraHMAC(char *msg, int tamanho, char *chave, int tamanho_chave);eused - i
     }
 
 
-    long int resultado = (((total2.tv_sec-total1.tv_sec) * 1000000) + (total2.tv_usec-total1.tv_usec))/qtd_pacotes;
+    long int resultado = (((total2.tv_sec-total1.tv_sec) * 1000000) + (total2.tv_usec-total1.tv_usec));
     printf("Tempo de RECEBIMENTO MEDIO = %ld microssegundos\n",resultado);
     printf("Qtd de pacotes recebidos: %d\n", x);
     printf("Qtd de pacotes GOOSE recebidos: %d\n", y);

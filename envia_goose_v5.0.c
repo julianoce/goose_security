@@ -22,15 +22,15 @@
 #include "gcry.h"           //para cadastrar rsa
 #include <math.h>
 // #include <dos.h>
-#define DESTINO_MAC0    0xb8
-#define DESTINO_MAC1    0x27
-#define DESTINO_MAC2    0xeb
-#define DESTINO_MAC3    0xfc
-#define DESTINO_MAC4    0x23
-#define DESTINO_MAC5    0x69
+#define DESTINO_MAC0    0x34
+#define DESTINO_MAC1    0x97
+#define DESTINO_MAC2    0xf6
+#define DESTINO_MAC3    0x7d
+#define DESTINO_MAC4    0x92
+#define DESTINO_MAC5    0x90
 
 // #define DEFAULT_IF      "wlp3s0"
-#define DEFAULT_IF      "enp4s0f3"
+#define DEFAULT_IF      "enp0s31f6"
 #define TAMANHO_BUF     512
 
 #define IPAD 0x36 //definido na RFC2104
@@ -58,6 +58,8 @@ int main(int argc, char *argv[]){
     int tipo_seguranca = 0;
     int conteudo_extra = 0;
     clock_t t1, t2;
+    clock_t t1_criptografia, t2_criptografia;
+    
 
     if(argc > 1) sscanf(argv[1], "%d", &qtd_pacotes);
     if(argc > 2) sscanf(argv[2], "%d", &tipo_seguranca);
@@ -73,7 +75,7 @@ int main(int argc, char *argv[]){
 
     //inicio do codigo de envio*********************
     int sockfd;
-    int ratio = 2;
+    int ratio = 6;
     int min_time = 1;
     int max_time = 1000;
     int sq_num = 1;
@@ -84,6 +86,12 @@ int main(int argc, char *argv[]){
     struct ifreq if_mac;
     struct sockaddr_ll socket_address;
     int pacotes_enviados = 0;
+    FILE * fp_total;
+    FILE * fp_cript;
+
+    fp_total = fopen ("file_transmissao_total.txt","a");
+    fp_cript = fopen ("file_transmissao_cript.txt","a");
+
 
     /* Get interface name */
     char ifName[IFNAMSIZ];
@@ -161,7 +169,6 @@ int main(int argc, char *argv[]){
     //fim do codigo para preparacao do CMAC
     //montagem e envio do pacote
     gettimeofday(&total1, NULL);
-    t1 = clock();
 
     // t_buffer = constroiPacote(buffer, sq_num, st_num_ini);
     //     if(tipo_seguranca==1) t_buffer = adicionaNoPacote(buffer, geraHash(buffer, t_buffer), t_buffer, SHA256_BLOCK_SIZE); //adiciona 32 bytes do digest SHA256 no pacote
@@ -185,6 +192,8 @@ int main(int argc, char *argv[]){
         if(st_num_ini == st_num){
             while (an < (max_time/ratio))
             {
+                t1 = clock();
+
                 sq_num = sq_num + 1;
                 an = min_time * (pow(ratio, sq_num-1));
                 printf("%d\n", an);
@@ -194,7 +203,14 @@ int main(int argc, char *argv[]){
                 t_buffer = constroiPacote(buffer, aux_sqnum, st_num_ini);
                 if(tipo_seguranca==1) t_buffer = adicionaNoPacote(buffer, geraHash(buffer, t_buffer), t_buffer, SHA256_BLOCK_SIZE); //adiciona 32 bytes do digest SHA256 no pacote
                 if(tipo_seguranca==2) t_buffer = adicionaNoPacote(buffer, geraCifraAES(geraHash(buffer, t_buffer), chave, SHA256_BLOCK_SIZE), t_buffer, SHA256_BLOCK_SIZE);
-                if(tipo_seguranca==3) t_buffer = adicionaNoPacote(buffer, geraCifraRSA(geraHash(buffer, t_buffer), pubk, privk, SHA256_BLOCK_SIZE), t_buffer, 32);
+                if(tipo_seguranca==3){
+                    t1_criptografia = clock();
+                    t_buffer = adicionaNoPacote(buffer, geraCifraRSA(geraHash(buffer, t_buffer), pubk, privk, SHA256_BLOCK_SIZE), t_buffer, 32);
+                    t2_criptografia = clock();
+                      if((float)((t2_criptografia - t1_criptografia) / 1000000.0F ) * 1000 > (float)an/1000){
+                        printf("Pacote enviado com atraso\n");
+                    }
+                } 
                 if(tipo_seguranca==4) t_buffer = adicionaNoPacote(buffer, geraHMAC(buffer, t_buffer, chave, 16), t_buffer, SHA256_BLOCK_SIZE);
                 if(tipo_seguranca==5){
                     unsigned char cmac[16];
@@ -211,7 +227,12 @@ int main(int argc, char *argv[]){
                 (struct sockaddr*)&socket_address,
                     sizeof(struct sockaddr_ll)) < 0)
                         printf("Falha no envio\n");
-                
+                t2 = clock();
+
+                fprintf (fp_total, "T1: %f\n",(float)(t1 / 1000000.0F ) * 1000);
+                fprintf (fp_total, "T2: %f\n",(float)(t2 / 1000000.0F ) * 1000);
+                fprintf (fp_cript, "T1: %f\n",(((float)t1_criptografia) / 1000000.0F ) * 1000);
+                fprintf (fp_cript, "T2: %f\n",(((float)t2_criptografia) / 1000000.0F ) * 1000);
 
                 pacotes_enviados = pacotes_enviados + 1;
             }
@@ -249,6 +270,7 @@ int main(int argc, char *argv[]){
         if(st_num_ini < st_num){
             printf("%d\n", st_num_ini);
             while(an < max_time/ratio){
+                t1 = clock();
                 sq_num = sq_num + 1;
                 an = min_time * (pow(ratio, sq_num-1));
                 printf("%d\n", an);
@@ -257,7 +279,14 @@ int main(int argc, char *argv[]){
                 t_buffer = constroiPacote(buffer, aux_sqnum, st_num_ini);
                 if(tipo_seguranca==1) t_buffer = adicionaNoPacote(buffer, geraHash(buffer, t_buffer), t_buffer, SHA256_BLOCK_SIZE); //adiciona 32 bytes do digest SHA256 no pacote
                 if(tipo_seguranca==2) t_buffer = adicionaNoPacote(buffer, geraCifraAES(geraHash(buffer, t_buffer), chave, SHA256_BLOCK_SIZE), t_buffer, SHA256_BLOCK_SIZE);
-                if(tipo_seguranca==3) t_buffer = adicionaNoPacote(buffer, geraCifraRSA(geraHash(buffer, t_buffer), pubk, privk, SHA256_BLOCK_SIZE), t_buffer, 32);
+                if(tipo_seguranca==3){
+                    t1_criptografia = clock();
+                    t_buffer = adicionaNoPacote(buffer, geraCifraRSA(geraHash(buffer, t_buffer), pubk, privk, SHA256_BLOCK_SIZE), t_buffer, 32);
+                    t2_criptografia = clock();
+                      if((float)((t2_criptografia - t1_criptografia) / 1000000.0F ) * 1000 > (float)an/1000){
+                        printf("Pacote enviado com atraso\n");
+                    }
+                } 
                 if(tipo_seguranca==4) t_buffer = adicionaNoPacote(buffer, geraHMAC(buffer, t_buffer, chave, 16), t_buffer, SHA256_BLOCK_SIZE);
                 if(tipo_seguranca==5){
                     unsigned char cmac[16];
@@ -274,15 +303,17 @@ int main(int argc, char *argv[]){
                 (struct sockaddr*)&socket_address,
                     sizeof(struct sockaddr_ll)) < 0)
                         printf("Falha no envio\n");
-                pacotes_enviados = pacotes_enviados + 1;
                 t2 = clock();
-                gettimeofday(&total2, NULL);
-                float diff = ((float)(t2 - t1) / 1000000.0F ) * 1000;   
-                printf("%f\n",diff); 
+
+                fprintf (fp_total, "T1 comeco total: %f\n",(float)(t1 / 1000000.0F ) * 1000);
+                fprintf (fp_total, "T2 fim total: %f\n",(float)(t2 / 1000000.0F ) * 1000);
+                fprintf (fp_cript, "T1 comeco criptografia: %f\n",(((float)t1_criptografia) / 1000000.0F ) * 1000);
+                fprintf (fp_cript, "T2 fim criptografia: %f\n",(((float)t2_criptografia) / 1000000.0F ) * 1000);
                 
             }
 
             if(an >= max_time/ratio){
+                t1 = clock();
                 sq_num = sq_num + 1;
                 an = max_time;
                 printf("%d\n", an);
@@ -292,7 +323,14 @@ int main(int argc, char *argv[]){
                 t_buffer = constroiPacote(buffer, aux_sqnum, st_num_ini);
                 if(tipo_seguranca==1) t_buffer = adicionaNoPacote(buffer, geraHash(buffer, t_buffer), t_buffer, SHA256_BLOCK_SIZE); //adiciona 32 bytes do digest SHA256 no pacote
                 if(tipo_seguranca==2) t_buffer = adicionaNoPacote(buffer, geraCifraAES(geraHash(buffer, t_buffer), chave, SHA256_BLOCK_SIZE), t_buffer, SHA256_BLOCK_SIZE);
-                if(tipo_seguranca==3) t_buffer = adicionaNoPacote(buffer, geraCifraRSA(geraHash(buffer, t_buffer), pubk, privk, SHA256_BLOCK_SIZE), t_buffer, 32);
+                if(tipo_seguranca==3){
+                    t1_criptografia = clock();
+                    t_buffer = adicionaNoPacote(buffer, geraCifraRSA(geraHash(buffer, t_buffer), pubk, privk, SHA256_BLOCK_SIZE), t_buffer, 32);
+                    t2_criptografia = clock();
+                    if((float)((t2_criptografia - t1_criptografia) / 1000000.0F ) * 1000 > (float)an/1000){
+                        printf("Pacote enviado com atraso\n");
+                    }
+                } 
                 if(tipo_seguranca==4) t_buffer = adicionaNoPacote(buffer, geraHMAC(buffer, t_buffer, chave, 16), t_buffer, SHA256_BLOCK_SIZE);
                 if(tipo_seguranca==5){
                     unsigned char cmac[16];
@@ -310,12 +348,20 @@ int main(int argc, char *argv[]){
                     sizeof(struct sockaddr_ll)) < 0)
                         printf("Falha no envio\n");
                 t2 = clock();
-                gettimeofday(&total2, NULL);
-                float diff = ((float)(t2 - t1) / 1000000.0F ) * 1000;   
-                printf("%f\n",diff); 
+
+                
+                fprintf (fp_total, "T1 comeco total: %f\n",(float)(t1 / 1000000.0F ) * 1000);
+                fprintf (fp_total, "T2 fim total: %f\n",(float)(t2 / 1000000.0F ) * 1000);
+                fprintf (fp_cript, "T1 comeco criptografia: %f\n",(((float)t1_criptografia) / 1000000.0F ) * 1000);
+                fprintf (fp_cript, "T2 fim criptografia: %f\n",(((float)t2_criptografia) / 1000000.0F ) * 1000);
                 pacotes_enviados = pacotes_enviados + 1;                
                 sq_num = 2;
                 an = min_time * (pow(ratio, sq_num-1));
+                
+                fprintf (fp_cript, "-------------------------------\n");
+                fprintf (fp_total, "-------------------------------\n");
+                fclose(fp_total);
+                fclose(fp_cript);
                 printf("%s\n", "Comeca a retransmissao....");
             }
             st_num_ini = st_num_ini + 1;
